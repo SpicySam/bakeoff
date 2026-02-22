@@ -20,139 +20,149 @@ Robot robot; //initialized in setup
 
 int numRepeats = 1; //sets the number of times each button repeats in the test
 
+// Flash timing: toggle every N frames (at 60fps, 6 frames = ~100ms = very fast flash)
+final int FLASH_INTERVAL = 6; // frames between flash toggles — lower = faster flash
+
 void setup()
 {
-  size(700, 700); // set the size of the window
-  //noCursor(); //hides the system cursor if you want
-  noStroke(); //turn off all strokes, we're just using fills here (can change this if you want)
-  textFont(createFont("Arial", 16)); //sets the font to Arial size 16
+  size(700, 700);
+  noCursor(); // hide system cursor — we draw our own precise crosshair
+  noStroke();
+  textFont(createFont("Arial", 16));
   textAlign(CENTER);
   frameRate(60);
-  ellipseMode(CENTER); //ellipses are drawn from the center (BUT RECTANGLES ARE NOT!)
-  //rectMode(CENTER); //enabling will break the scaffold code, but you might find it easier to work with centered rects
+  ellipseMode(CENTER);
 
   try {
-    robot = new Robot(); //create a "Java Robot" class that can move the system cursor
+    robot = new Robot();
   } 
   catch (AWTException e) {
     e.printStackTrace();
   }
 
   //===DON'T MODIFY MY RANDOM ORDERING CODE==
-  for (int i = 0; i < 16; i++) //generate list of targets and randomize the order
-      // number of buttons in 4x4 grid
+  for (int i = 0; i < 16; i++)
     for (int k = 0; k < numRepeats; k++)
-      // number of times each button repeats
       trials.add(i);
 
-  Collections.shuffle(trials); // randomize the order of the buttons
+  Collections.shuffle(trials);
   System.out.println("trial order: " + trials);
   
-  surface.setLocation(0,0);// put window in top left corner of screen (doesn't always work)
+  surface.setLocation(0, 0);
 }
 
 
 void draw()
 {
-  background(0); //set background to black
+  background(0);
 
-  if (trialNum >= trials.size()) //check to see if test is over
+  if (trialNum >= trials.size()) // test is over
   {
-    float timeTaken = (finishTime-startTime) / 1000f;
-    float penalty = constrain(((95f-((float)hits*100f/(float)(hits+misses)))*.2f),0,100);
-    fill(255); //set fill color to white
-    //write to screen (not console)
+    float timeTaken = (finishTime - startTime) / 1000f;
+    float penalty = constrain(((95f - ((float)hits * 100f / (float)(hits + misses))) * .2f), 0, 100);
+    fill(255);
     text("Finished!", width / 2, height / 2); 
     text("Hits: " + hits, width / 2, height / 2 + 20);
     text("Misses: " + misses, width / 2, height / 2 + 40);
-    text("Accuracy: " + (float)hits*100f/(float)(hits+misses) +"%", width / 2, height / 2 + 60);
+    text("Accuracy: " + (float)hits * 100f / (float)(hits + misses) + "%", width / 2, height / 2 + 60);
     text("Total time taken: " + timeTaken + " sec", width / 2, height / 2 + 80);
-    text("Average time for each button: " + nf((timeTaken)/(float)(hits+misses),0,3) + " sec", width / 2, height / 2 + 100);
-    text("Average time for each button + penalty: " + nf(((timeTaken)/(float)(hits+misses) + penalty),0,3) + " sec", width / 2, height / 2 + 140);
-    return; //return, nothing else to do now test is over
+    text("Average time for each button: " + nf((timeTaken) / (float)(hits + misses), 0, 3) + " sec", width / 2, height / 2 + 100);
+    text("Average time for each button + penalty: " + nf(((timeTaken) / (float)(hits + misses) + penalty), 0, 3) + " sec", width / 2, height / 2 + 140);
+    return;
   }
 
-  fill(255); //set fill color to white
-  text((trialNum + 1) + " of " + trials.size(), 40, 20); //display what trial the user is on
+  fill(255);
+  text((trialNum + 1) + " of " + trials.size(), 40, 20);
 
-  for (int i = 0; i < 16; i++)// for all button
-    drawButton(i); //draw button
+  for (int i = 0; i < 16; i++)
+    drawButton(i);
 
-  fill(255, 0, 0, 200); // set fill color to translucent red
-  ellipse(mouseX, mouseY, 20, 20); //draw user cursor as a circle with a diameter of 20
+  // Draw a small, precise crosshair cursor instead of a big circle
+  drawCrosshair(mouseX, mouseY);
 }
 
-void mousePressed() // test to see if hit was in target!
+void drawCrosshair(int cx, int cy)
 {
-  if (trialNum >= trials.size()) //if task is over, just return
+  stroke(255, 0, 0);
+  strokeWeight(1.5);
+  int arm = 10; // length of each crosshair arm
+  int gap = 3;  // gap around center for clarity
+  // horizontal arms
+  line(cx - arm, cy, cx - gap, cy);
+  line(cx + gap, cy, cx + arm, cy);
+  // vertical arms
+  line(cx, cy - arm, cx, cy - gap);
+  line(cx, cy + gap, cx, cy + arm);
+  // tiny center dot
+  fill(255, 0, 0);
+  noStroke();
+  ellipse(cx, cy, 2, 2);
+  noStroke(); // reset
+}
+
+void mousePressed()
+{
+  if (trialNum >= trials.size())
     return;
 
-  if (trialNum == 0) //check if first click, if so, start timer
+  if (trialNum == 0)
     startTime = millis();
 
-  if (trialNum == trials.size() - 1) //check if final click
+  if (trialNum == trials.size() - 1)
   {
     finishTime = millis();
-    //write to terminal some output. Useful for debugging too.
     println("we're done!");
   }
 
   Rectangle bounds = getButtonLocation(trials.get(trialNum));
 
- //check to see if mouse cursor is inside button 
-  if ((mouseX > bounds.x && mouseX < bounds.x + bounds.width) && (mouseY > bounds.y && mouseY < bounds.y + bounds.height)) // test to see if hit was within bounds
+  if ((mouseX > bounds.x && mouseX < bounds.x + bounds.width) && (mouseY > bounds.y && mouseY < bounds.y + bounds.height))
   {
-    System.out.println("HIT! " + trialNum + " " + (millis() - startTime)); // success
+    System.out.println("HIT! " + trialNum + " " + (millis() - startTime));
     hits++; 
   } 
   else
   {
-    System.out.println("MISSED! " + trialNum + " " + (millis() - startTime)); // fail
+    System.out.println("MISSED! " + trialNum + " " + (millis() - startTime));
     misses++;
   }
 
-  trialNum++; //Increment trial number
-
-  //in this example code, we move the mouse back to the middle
-  //robot.mouseMove(width/2, (height)/2); //on click, move cursor to roughly center of window!
+  trialNum++;
 }  
 
-//probably shouldn't have to edit this method
-Rectangle getButtonLocation(int i) //for a given button ID, what is its location and size
+Rectangle getButtonLocation(int i)
 {
    int x = (i % 4) * (padding + buttonSize) + margin;
    int y = (i / 4) * (padding + buttonSize) + margin;
    return new Rectangle(x, y, buttonSize, buttonSize);
 }
 
-//you can edit this method to change how buttons appear
 void drawButton(int i)
 {
   Rectangle bounds = getButtonLocation(i);
 
-  if (trials.get(trialNum) == i) // see if current button is the target
-    fill(0, 255, 255); // if so, fill cyan
+  if (trials.get(trialNum) == i) // this is the TARGET button
+  {
+    // Flash between bright white and black based on frameCount
+    boolean flashOn = (frameCount / FLASH_INTERVAL) % 2 == 0;
+    if (flashOn)
+      fill(255); // bright white
+    else
+      fill(0, 0, 0); // black (invisible against background — very striking flash)
+    
+    // Draw a colored outline so the button position is always visible even when black
+    stroke(0, 255, 0); // green outline always shows the boundary
+    strokeWeight(2);
+    rect(bounds.x, bounds.y, bounds.width, bounds.height);
+    noStroke();
+  }
   else
-    fill(200); // if not, fill gray
-
-  rect(bounds.x, bounds.y, bounds.width, bounds.height); //draw button
+  {
+    fill(200); // non-target: gray
+    rect(bounds.x, bounds.y, bounds.width, bounds.height);
+  }
 }
 
-void mouseMoved()
-{
-   //can do stuff everytime the mouse is moved (i.e., not clicked)
-   //https://processing.org/reference/mouseMoved_.html
-}
-
-void mouseDragged()
-{
-  //can do stuff everytime the mouse is dragged
-  //https://processing.org/reference/mouseDragged_.html
-}
-
-void keyPressed() 
-{
-  //can use the keyboard if you wish
-  //https://processing.org/reference/keyTyped_.html
-  //https://processing.org/reference/keyCode.html
-}
+void mouseMoved() {}
+void mouseDragged() {}
+void keyPressed() {}
