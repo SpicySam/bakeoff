@@ -17,6 +17,7 @@ int finishTime = 0; //records the time of the final click
 int hits = 0; //number of successful clicks
 int misses = 0; //number of missed clicks
 Robot robot; //initialized in setup 
+int lastPressedIndex = -1; // stores the last clicked button
 
 int numRepeats = 1; //sets the number of times each button repeats in the test
 
@@ -77,6 +78,39 @@ void draw()
 
   for (int i = 0; i < 16; i++)// for all button
     drawButton(i); //draw button
+  
+  //draw arrow to next target
+  // last pressed to currently highlighted
+  if (lastPressedIndex != -1 && trialNum < trials.size()) {
+    int currentIndex = trials.get(trialNum);
+  
+    Rectangle prevBounds = getButtonLocation(lastPressedIndex);
+    Rectangle currentBounds = getButtonLocation(currentIndex);
+  
+    drawArrow(
+      prevBounds.x + prevBounds.width/2.0,
+      prevBounds.y + prevBounds.height/2.0,
+      currentBounds.x + currentBounds.width/2.0,
+      currentBounds.y + currentBounds.height/2.0
+    );
+  }
+
+
+  //currently highlighted to next highlighted
+  if (trialNum < trials.size() - 1) {
+    int currentIndex = trials.get(trialNum);
+    int nextIndex = trials.get(trialNum + 1);
+  
+    Rectangle currentBounds = getButtonLocation(currentIndex);
+    Rectangle nextBounds = getButtonLocation(nextIndex);
+  
+    drawArrow(
+      currentBounds.x + currentBounds.width/2.0,
+      currentBounds.y + currentBounds.height/2.0,
+      nextBounds.x + nextBounds.width/2.0,
+      nextBounds.y + nextBounds.height/2.0
+    );
+  }
 
   fill(255, 0, 0, 200); // set fill color to translucent red
   ellipse(mouseX, mouseY, 20, 20); //draw user cursor as a circle with a diameter of 20
@@ -111,6 +145,8 @@ void mousePressed() // test to see if hit was in target!
     misses++;
   }
 
+  lastPressedIndex = trials.get(trialNum);
+  
   trialNum++; //Increment trial number
 
   //in this example code, we move the mouse back to the middle
@@ -136,6 +172,26 @@ void drawButton(int i)
     fill(200); // if not, fill gray
 
   rect(bounds.x, bounds.y, bounds.width, bounds.height); //draw button
+}
+
+void drawArrow(float x1, float y1, float x2, float y2) {
+  stroke(255, 0, 0);
+  strokeWeight(3);
+  line(x1, y1, x2, y2);
+
+  float angle = atan2(y2 - y1, x2 - x1);
+
+  pushMatrix();
+  translate(x2, y2);
+  rotate(angle);
+
+  fill(255, 0, 0);
+  noStroke();
+  triangle(0, 0, -15, 6, -15, -6);
+
+  popMatrix();
+
+  noStroke();
 }
 
 void mouseMoved()
